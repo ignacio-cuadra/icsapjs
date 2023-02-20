@@ -1,6 +1,6 @@
 import sapFetcherFactory from "./sapFetcherFactory.js";
 export default class SapClient {
-  sesionId = undefined;
+  sessionId = undefined;
   sessionTimeout = undefined;
   loggedInAt = undefined;
   sessionExpireAt = undefined;
@@ -24,8 +24,8 @@ export default class SapClient {
         Language: this.language,
       },
     });
-    this.sesionId = response.SessionId;
-    this.sessionTimeout = response.sessionTimeout;
+    this.sessionId = response.data.SessionId;
+    this.sessionTimeout = response.data.sessionTimeout;
     this.loggedInAt = new Date().getTime(); // check this
     this.sessionExpireAt = this.loggedInAt + this.sessionTimeout * 60; // check this
     return response;
@@ -33,5 +33,19 @@ export default class SapClient {
   isSessionExpired(aditionalTime = 1) {
     return new Date().getTime() + aditionalTime > this.sessionExpireAt; // check this
   }
+  async fetch({ action, method = "GET", body = undefined, params }) {
+    if (this.sesionId && this.isSessionExpired()) {
+      this.sesionId = null;
+    }
+    if (!this.sesionId) {
+      await this.login();
+    }
+    return await this.sapFecther({
+      url: action,
+      method,
+      body,
+      params,
+      sessionId: this.sessionId,
+    });
+  }
 }
-// self-signed certificate
